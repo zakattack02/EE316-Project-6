@@ -1,6 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use ieee.std_logic_unsigned.all;
 
 entity myManager_v1_0_M00_AXI is
 	generic (
@@ -188,7 +189,7 @@ architecture implementation of myManager_v1_0_M00_AXI is
 	
 	signal reg_rdata	: std_logic_vector(C_M_AXI_DATA_WIDTH-1 downto 0);
 	
---begin
+begin
 --    -- Read scancode when interrupt is asserted
 --    process (ps2_interrupt)
 --    begin
@@ -227,8 +228,8 @@ architecture implementation of myManager_v1_0_M00_AXI is
 	-- I/O Connections assignments
 
 	current_addr <= std_logic_vector(unsigned(C_M_VIDEOMEM_BASE_ADDR) + 
-                  (unsigned(current_line) * CHARS_PER_LINE * CHAR_HEIGHT + 
-                  unsigned(current_char) + unsigned(scan_line) * CHARS_PER_LINE) * 
+                  (to_unsigned(current_line,39) * CHARS_PER_LINE * CHAR_HEIGHT + 
+                  to_unsigned(current_char,79) + to_unsigned(scan_line,11) * CHARS_PER_LINE) * 
                   CHAR_WIDTH / PIXELS_PER_WORD);
                   --slave write address
 	M_AXI_AWADDR	<= current_addr;
@@ -341,20 +342,20 @@ architecture implementation of myManager_v1_0_M00_AXI is
 	--Flag write errors                                                    
 	  write_resp_error <= (axi_bready and M_AXI_BVALID and M_AXI_BRESP(1));
 
-	  process(M_AXI_ACLK)                                                              
-	  begin                                                                            
-	    if (rising_edge (M_AXI_ACLK)) then                                             
-	      if (M_AXI_ARESETN = '0' or mst_exec_state = WAIT4IRQ) then                                                 
-	        read_index <= (others => '0');                                             
-	      else                                                                         
-	        if (start_single_read = '1') then                                          
-	          -- Signals a new read address is                                         
-	          -- available by user logic                                               
-	          read_index <= std_logic_vector (unsigned(read_index) + 1);                                          
-	        end if;                                                                    
-	      end if;                                                                      
-	    end if;                                                                        
-	  end process;                                                                                                                                       
+--	  process(M_AXI_ACLK)                                                              
+--	  begin                                                                            
+--	    if (rising_edge (M_AXI_ACLK)) then                                             
+--	      if (M_AXI_ARESETN = '0' or mst_exec_state = WAIT4IRQ) then                                                 
+--	        read_index <= (others => '0');                                             
+--	      else                                                                         
+--	        if (start_single_read = '1') then                                          
+--	          -- Signals a new read address is                                         
+--	          -- available by user logic                                               
+--	          --read_index <= std_logic_vector (to_unsigned(read_index) + 1);                                          
+--	        end if;                                                                    
+--	      end if;                                                                      
+--	    end if;                                                                        
+--	  end process;                                                                                                                                       
 	  process(M_AXI_ACLK)                                                              
 	  begin                                                                            
 	    if (rising_edge (M_AXI_ACLK)) then                                             
@@ -396,63 +397,66 @@ architecture implementation of myManager_v1_0_M00_AXI is
 	axi_wdata(7 downto 0) <= reg_pixels;                  
 	                                                                        
 	--Flag write errors                                                     
-	  read_resp_error <= (axi_rready and M_AXI_RVALID and M_AXI_RRESP(1));  
+--	  read_resp_error <= (axi_rready and M_AXI_RVALID and M_AXI_RRESP(1));  
 
-	--  Write Addresses                                                               
-	    process(M_AXI_ACLK)                                                                 
-	      begin                                                                            
-	    	if (rising_edge (M_AXI_ACLK)) then                                              
-	    	  if (M_AXI_ARESETN = '0' or mst_exec_state = WAIT4IRQ) then                                                 
-	    	    axi_awaddr <= (others => '0');                                              
-	    	  elsif (M_AXI_AWREADY = '1' and axi_awvalid = '1') then                        
-	    	    -- Signals a new write address/ write data is                               
-	    	    -- available by user logic                                                  
-	    	    axi_awaddr <= std_logic_vector (unsigned(axi_awaddr) + 4);                                     
-	    	  end if;                                                                       
-	    	end if;                                                                         
-	      end process;                                                                     
+--	--  Write Addresses                                                               
+--	    process(M_AXI_ACLK)                                                                 
+--	      begin                                                                            
+--	    	if (rising_edge (M_AXI_ACLK)) then                                              
+--	    	  if (M_AXI_ARESETN = '0' or mst_exec_state = WAIT4IRQ) then                                                 
+--	    	    axi_awaddr <= (others => '0');                                              
+--	    	  elsif (M_AXI_AWREADY = '1' and axi_awvalid = '1') then                        
+--	    	    -- Signals a new write address/ write data is                               
+--	    	    -- available by user logic                                                  
+--	    	    axi_awaddr <= std_logic_vector (unsigned(axi_awaddr) + 4);                                     
+--	    	  end if;                                                                       
+--	    	end if;                                                                         
+--	      end process;                                                                     
 	                                                                                       
-	-- Read Addresses                                                                      
-	    process(M_AXI_ACLK)                                                                
-	   	  begin                                                                         
-	   	    if (rising_edge (M_AXI_ACLK)) then                                          
-	   	      if (M_AXI_ARESETN = '0' or mst_exec_state = WAIT4IRQ) then                                              
-	   	        axi_araddr <= (others => '0');                                          
-	   	      elsif (M_AXI_ARREADY = '1' and axi_arvalid = '1') then                    
-	   	        -- Signals a new write address/ write data is                           
-	   	        -- available by user logic                                              
-	   	        axi_araddr <= std_logic_vector (unsigned(axi_araddr) + 4);                                 
-	   	      end if;                                                                   
-	   	    end if;                                                                     
-	   	  end process;                                                                  
+--	-- Read Addresses                                                                      
+--	    process(M_AXI_ACLK)                                                                
+--	   	  begin                                                                         
+--	   	    if (rising_edge (M_AXI_ACLK)) then                                          
+--	   	      if (M_AXI_ARESETN = '0' or mst_exec_state = WAIT4IRQ) then                                              
+--	   	        axi_araddr <= (others => '0');                                          
+--	   	      elsif (M_AXI_ARREADY = '1' and axi_arvalid = '1') then                    
+--	   	        -- Signals a new write address/ write data is                           
+--	   	        -- available by user logic                                              
+--	   	        axi_araddr <= std_logic_vector (unsigned(axi_araddr) + 4);                                 
+--	   	      end if;                                                                   
+--	   	    end if;                                                                     
+--	   	  end process;                                                                  
 		                                                                                    
-	-- Write data                                                                          
-	    process(M_AXI_ACLK)                                                                
-		  begin                                                                             
-		    if (rising_edge (M_AXI_ACLK)) then                                              
-		      if (M_AXI_ARESETN = '0' or mst_exec_state = WAIT4IRQ) then                                                  
-		        axi_wdata <= C_M_START_DATA_VALUE;    	                                    
-		      elsif (M_AXI_WREADY = '1' and axi_wvalid = '1') then                          
-		        -- Signals a new write address/ write data is                               
-		        -- available by user logic                                                  
-		        axi_wdata <= std_logic_vector (unsigned(C_M_START_DATA_VALUE) + unsigned(write_index));    
-		      end if;                                                                       
-		    end if;                                                                         
-		  end process;                                                                      		                                                                                    
+--	-- Write data                                                                          
+--	    process(M_AXI_ACLK)                                                                
+--		  begin                                                                             
+--		    if (rising_edge (M_AXI_ACLK)) then                                              
+--		      if (M_AXI_ARESETN = '0' or mst_exec_state = WAIT4IRQ) then                                                  
+--		        axi_wdata <= C_M_START_DATA_VALUE;    	                                    
+--		      elsif (M_AXI_WREADY = '1' and axi_wvalid = '1') then                          
+--		        -- Signals a new write address/ write data is                               
+--		        -- available by user logic                                                  
+--		        --axi_wdata <= std_logic_vector (to_unsigned(C_M_START_DATA_VALUE) + to_unsigned(write_index));    
+--		      axi_awvalid <= '0';
+--		      end if;                                                                       
+--		    end if;                                                                         
+--		  end process;                                                                      		                                                                                    
 		                                                                                    
-	-- Expected read data                                                                  
-	    process(M_AXI_ACLK)                                                                
-	    begin                                                                              
-	      if (rising_edge (M_AXI_ACLK)) then                                               
-	        if (M_AXI_ARESETN = '0' or mst_exec_state = WAIT4IRQ) then                                                   
-	          expected_rdata <= C_M_START_DATA_VALUE;    	                                
-	        elsif (M_AXI_RVALID = '1' and axi_rready = '1') then                           
-	          -- Signals a new write address/ write data is                                
-	          -- available by user logic                                                   
-	          expected_rdata <= std_logic_vector (unsigned(C_M_START_DATA_VALUE) + unsigned(read_index)); 
-	        end if;                                                                        
-	      end if;                                                                          
-	    end process;                                                                       
+--	-- Expected read data                                                                  
+--	    process(M_AXI_ACLK)                                                                
+--	    begin                                                                              
+--	      if (rising_edge (M_AXI_ACLK)) then                                               
+--	        if (M_AXI_ARESETN = '0' or mst_exec_state = WAIT4IRQ) then                                                   
+--	          --expected_rdata <= C_M_START_DATA_VALUE;
+--	          axi_awvalid <= '0';    	                                
+--	        elsif (M_AXI_RVALID = '1' and axi_rready = '1') then                           
+--	          -- Signals a new write address/ write data is                                
+--	          -- available by user logic                                                   
+--	         -- expected_rdata <= std_logic_vector (to_unsigned(C_M_START_DATA_VALUE) + to_unsigned(read_index)); 
+--	        axi_awvalid <= '0';
+--	        end if;                                                                        
+--	      end if;                                                                          
+--	    end process;                                                                       
 	  --implement master command interface state machine                                           
 	  
 	  MASTER_EXECUTION_PROC:process(M_AXI_ACLK)                                                         
